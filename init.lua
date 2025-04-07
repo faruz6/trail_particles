@@ -1,6 +1,6 @@
-local player_trails = {}
+local trail_particles = {}
 
--- List of available trails and their settings
+-- Trail definitions
 local trail_types = {
     sparkle = {
         texture = "default_item_smoke.png",
@@ -13,30 +13,83 @@ local trail_types = {
         color = "#ff6600",
     },
     bubble = {
-        texture = "bubble.png", -- Make sure you have a bubble.png or change this
+        texture = "bubble.png", -- Use a valid texture here
         glow = 5,
         color = "#66ccff",
     }
 }
 
--- Chat command to set trail
+-- Load trail on join
+minetest.register_on_joinplayer(function(player)
+    local name = player:get_player_name()
+    local trail = player:get_attribute("trail_particles:trail")
+    if trail and trail_types[trail] then
+        trail_particles[name] = trail
+    end
+end)
+
+-- Save trail on leave
+minetest.register_on_leaveplayer(function(player)
+    local name = player:get_player_name()
+    local trail = trail_particles[name]
+    if trail then
+        player:set_attribute("trail_particles:trail", trail)
+    end
+end)
+
+-- Player command to set their own trail
 minetest.register_chatcommand("trail", {
     params = "<none|sparkle|flame|bubble>",
-    description = "Set your trail particle effect.",
+    description = "Set your own trail particle effect.",
     func = function(name, param)
+        local player = minetest.get_player_by_name(name)
+        if not player then return false, "Player not found." end
+
         if param == "none" then
-            player_trails[name] = nil
+            trail_particles[name] = nil
+            player:set_attribute("trail_particles:trail", "")
             return true, "Trail disabled."
         elseif trail_types[param] then
-            player_trails[name] = param
+            trail_particles[name] = param
+            player:set_attribute("trail_particles:trail", param)
             return true, "Trail set to: " .. param
         else
-            return false, "Invalid trail type. Options: none, sparkle, flame, bubble"
+            return false, "Invalid trail. Use: none, sparkle, flame, bubble"
         end
     end
 })
 
--- Update particle trails when players move
+-- Admin command to set trail for others
+minetest.register_chatcommand("settrail", {
+    params = "<trail> <playername>",
+    description = "Admin command: Set a trail for a player.",
+    privs = {server = true},
+    func = function(name, param)
+        local args = param:split(" ")
+        local trail = args[1]
+        local target = args[2]
+
+        if not trail or not target then
+            return false, "Usage: /settrail <trail> <playername>"
+        end
+
+        if trail == "none" then
+            trail_particles[target] = nil
+            local p = minetest.get_player_by_name(target)
+            if p then p:set_attribute("trail_particles:trail", "") end
+            return true, "Removed trail from " .. target
+        elseif trail_types[trail] then
+            trail_particles[target] = trail
+            local p = minetest.get_player_by_name(target)
+            if p then p:set_attribute("trail_particles:trail", trail) end
+            return true, "Trail '" .. trail .. "' set for " .. target
+        else
+            return false, "Invalid trail type."
+        end
+    end
+})
+
+-- Trail particles handler
 local last_positions = {}
 
 minetest.register_globalstep(function(dtime)
@@ -48,7 +101,7 @@ minetest.register_globalstep(function(dtime)
         if last and vector.distance(pos, last) > 0.1 then
             last_positions[name] = vector.new(pos)
 
-            local trail = player_trails[name]
+            local trail = trail_particles[name]
             if trail and trail_types[trail] then
                 local effect = trail_types[trail]
                 minetest.add_particle({
@@ -69,3 +122,4 @@ minetest.register_globalstep(function(dtime)
         end
     end
 end)
+
