@@ -1,22 +1,16 @@
-local trail_particles = {}
+local TRAIL_INTERVAL = 0.2
+local trail_timers = {}
 
--- Trail definitions
-local trail_types = {
+-- Base trail definitions
+local BASE_TRAILS = {
     sparkle = {
-        texture = "default_item_smoke.png",
-        glow = 10,
-        color = "#ffffff",
+        walk = { texture = "default_mese_particle.png", size = 2, color = "#00ffff" },
+        sprint = { texture = "default_mese_particle.png", size = 2, color = "#ff0000" }
     },
     flame = {
-        texture = "fire_basic_flame.png",
-        glow = 15,
-        color = "#ff6600",
+        walk = { texture = "fire_basic_flame.png", size = 2, color = "#ffa500" },
+        sprint = { texture = "fire_basic_flame.png", size = 2.5, color = "#ff4500" }
     },
-    bubble = {
-        texture = "bubble.png", -- Use a valid texture here
-        glow = 5,
-        color = "#66ccff",
-    }
 }
 
 -- Load trail on join
@@ -37,25 +31,63 @@ minetest.register_on_leaveplayer(function(player)
     end
 end)
 
--- Player command to set their own trail
-minetest.register_chatcommand("trail", {
-    params = "<none|sparkle|flame|bubble>",
-    description = "Set your own trail particle effect.",
-    func = function(name, param)
-        local player = minetest.get_player_by_name(name)
-        if not player then return false, "Player not found." end
+-- Check sprinting
+local function is_sprinting(player)
+    local control = player:get_player_control()
+    return control.aux1 and control.up
+end
 
-        if param == "none" then
-            trail_particles[name] = nil
-            player:set_attribute("trail_particles:trail", "")
-            return true, "Trail disabled."
-        elseif trail_types[param] then
-            trail_particles[name] = param
-            player:set_attribute("trail_particles:trail", param)
-            return true, "Trail set to: " .. param
-        else
-            return false, "Invalid trail. Use: none, sparkle, flame, bubble"
+minetest.register_globalstep(function(dtime)
+    for _, player in ipairs(minetest.get_connected_players()) do
+        local name = player:get_player_name()
+        trail_timers[name] = (trail_timers[name] or 0) + dtime
+        if trail_timers[name] < TRAIL_INTERVAL then goto continue end
+        trail_timers[name] = 0
+
+        local trail_type = player:get_attribute("trail")
+        local def = BASE_TRAILS[trail_type or ""]
+
+        if not def then goto continue end
+
+        local pos = vector.add(player:get_pos(), {x = 0, y = 0.5, z = 0})
+        local trail_def = is_sprinting(player) and def.sprint or def.walk
+
+        minetest.add_particle({
+            pos = pos,
+            velocity = {x=0, y=0.3, z=0},
+            acceleration = {x=0, y=0.5, z=0},
+            expirationtime = 0.6,
+            size = trail_def.size,
+            texture = trail_def.texture,
+            glow = 8,
+        })
+
+        ::continue::
+    end
+end)
+
+-- Command to set trail
+minetest.register_chatcommand("trail", {
+    params = "<type>",
+    description = "Set your trail (sparkle or flame)",
+    func = function(name, param)
+        if param == "" then
+            return false, "Usage: /trail <sparkle|flame|none>"
         end
+        if param == "none" then
+            local player = minetest.get_player_by_name(name)
+            if player then player:set_attribute("trail", "") end
+            return true, "Trail removed"
+        end
+        if not BASE_TRAILS[param] then
+            return false, "Trail not found. Available: sparkle, flame, none"
+        end
+        local player = minetest.get_player_by_name(name)
+        if player then
+            player:set_attribute("trail", param)
+            return true, "Trail set to " .. param
+        end
+        return false, "Player not found"
     end
 })
 
@@ -88,38 +120,3 @@ minetest.register_chatcommand("settrail", {
         end
     end
 })
-
--- Trail particles handler
-local last_positions = {}
-
-minetest.register_globalstep(function(dtime)
-    for _, player in ipairs(minetest.get_connected_players()) do
-        local name = player:get_player_name()
-        local pos = player:get_pos()
-        local last = last_positions[name]
-
-        if last and vector.distance(pos, last) > 0.1 then
-            last_positions[name] = vector.new(pos)
-
-            local trail = trail_particles[name]
-            if trail and trail_types[trail] then
-                local effect = trail_types[trail]
-                minetest.add_particle({
-                    pos = {
-                        x = pos.x + math.random(-2, 2) * 0.05,
-                        y = pos.y + 0.5,
-                        z = pos.z + math.random(-2, 2) * 0.05
-                    },
-                    velocity = {x = 0, y = 0.2, z = 0},
-                    expirationtime = 0.5,
-                    size = 1.5,
-                    texture = effect.texture,
-                    glow = effect.glow,
-                })
-            end
-        else
-            last_positions[name] = vector.new(pos)
-        end
-    end
-end)
-
