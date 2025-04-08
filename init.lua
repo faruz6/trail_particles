@@ -50,14 +50,14 @@ minetest.register_globalstep(function(dtime)
         local def = BASE_TRAILS[trail_type or ""]
         if not def then goto continue end
 
-        local pos = vector.add(player:get_pos(), {x = 0, y = 1, z = 0})
         local trail_def = is_sprinting(player) and def.sprint or def.walk
+        local pos = vector.add(player:get_pos(), {x = 0, y = 1, z = 0})
 
-        -- Add random offset like ender/mese chest
+        -- Random offset around the feet
         local spread = 0.4
         local offset = {
             x = math.random(-spread*100, spread*100) / 100,
-            y = math.random(0, 30) / 100, -- stay above feet
+            y = math.random(0, 30) / 100,
             z = math.random(-spread*100, spread*100) / 100,
         }
         pos = vector.add(pos, offset)
@@ -69,6 +69,7 @@ minetest.register_globalstep(function(dtime)
             expirationtime = 0.4,
             size = trail_def.size,
             texture = trail_def.texture,
+            color = trail_def.color, -- ✅ Add this line to apply sprint/walk color
             glow = 8,
             collisiondetection = false,
         })
