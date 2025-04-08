@@ -5,11 +5,11 @@ local trail_timers = {}
 local BASE_TRAILS = {
     sparkle = {
         walk = { texture = "default_mese_particle.png", size = 2, color = "#00ffff" },
-        sprint = { texture = "default_mese_particle.png", size = 2, color = "#ff0000" }
+        sprint = { texture = "default_mese_particle.png", size = 2, color = "#ff0000"}
     },
     flame = {
-        walk = { texture = "fire_basic_flame.png", size = 2, color = "#ffa500" },
-        sprint = { texture = "fire_basic_flame.png", size = 2.5, color = "#ff4500" }
+        walk = { texture = "flame.png", size = 2, color = "#ffa500" },
+        sprint = { texture = "flame.png", size = 2.5, color = "#ff4500" }
     },
 }
 
