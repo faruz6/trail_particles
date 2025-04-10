@@ -57,7 +57,7 @@ minetest.register_globalstep(function(dtime)
         local spread = 0.4
         local offset = {
             x = math.random(-spread*100, spread*100) / 100,
-            y = math.random(0, 30) / 100,
+            y = math.random(0, -30) / 100,
             z = math.random(-spread*100, spread*100) / 100,
         }
         pos = vector.add(pos, offset)
