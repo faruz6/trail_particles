@@ -2,7 +2,7 @@ local TRAIL_INTERVAL = 0.2
 local trail_timers = {}
 local trail_particles = {}
 
--- trails
+-- Trail definitions
 local BASE_TRAILS = {
     sparkle = {
         walk = { texture = "default_mese_particle.png", size = 1.5, color = "#00ffff" },
@@ -14,14 +14,14 @@ local BASE_TRAILS = {
     },
 }
 
--- check sprinting
+-- Check sprinting based on velocity (more reliable across PC/mobile)
 local function is_sprinting(player)
-    local velocity = player:get_velocity()
-    local horizontal_speed = math.sqrt(velocity.x^2 + velocity.z^2)
-    return horizontal_speed > 4.1
+    local vel = player:get_velocity()
+    local speed = math.sqrt(vel.x * vel.x + vel.z * vel.z)
+    return speed > 4.2 -- Adjust this threshold if needed based on your sprint speed
 end
 
--- Load
+-- Load saved trail
 minetest.register_on_joinplayer(function(player)
     local name = player:get_player_name()
     local trail = player:get_attribute("trail_particles:trail")
@@ -30,7 +30,7 @@ minetest.register_on_joinplayer(function(player)
     end
 end)
 
--- save on leave
+-- Save trail on leave
 minetest.register_on_leaveplayer(function(player)
     local name = player:get_player_name()
     local trail = trail_particles[name]
@@ -51,9 +51,9 @@ minetest.register_globalstep(function(dtime)
         local def = BASE_TRAILS[trail_type or ""]
         if not def then goto continue end
 
-        local trail_def = is_sprinting(player) and def.sprint or def.walk
         local pos = vector.add(player:get_pos(), {x = 0, y = 1, z = 0})
-       
+        local trail_def = is_sprinting(player) and def.sprint or def.walk
+
         local spread = 0.4
         local offset = {
             x = math.random(-spread*100, spread*100) / 100,
@@ -69,7 +69,6 @@ minetest.register_globalstep(function(dtime)
             expirationtime = 0.4,
             size = trail_def.size,
             texture = trail_def.texture,
-            color = trail_def.color,
             glow = 8,
             collisiondetection = false,
         })
@@ -78,7 +77,7 @@ minetest.register_globalstep(function(dtime)
     end
 end)
 
--- command for players
+-- Chat commands
 minetest.register_chatcommand("trail", {
     params = "<sparkle|flame|none>",
     description = "Choose your particle trail",
@@ -100,7 +99,6 @@ minetest.register_chatcommand("trail", {
     end
 })
 
--- admin command
 minetest.register_chatcommand("settrail", {
     params = "<trail> <playername>",
     description = "Admin-only: Set a trail for a player",
