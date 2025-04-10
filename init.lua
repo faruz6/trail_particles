@@ -9,8 +9,8 @@ local BASE_TRAILS = {
         sprint = { texture = "default_mese_particle.png", size = 2.2, color = "#ff0000" }
     },
     flame = {
-        walk = { texture = "flame.png", size = 2, color = "#ffa500" },
-        sprint = { texture = "flame.png", size = 2.5, color = "#ff4500" }
+        walk = { texture = "flame.png", size = 5, color = "#ffa500" },
+        sprint = { texture = "flame.png", size = 3, color = "#ff4500" }
     },
 }
 
@@ -56,17 +56,17 @@ minetest.register_globalstep(function(dtime)
 
         local spread = 0.4
         local offset = {
-            x = math.random(-spread*100, spread*100) / 100,
-            y = math.random(0, -30) / 100,
-            z = math.random(-spread*100, spread*100) / 100,
+            x = math.random(-spread*150, spread*150) / 100,
+            y = math.random(-30, 10) / 100,
+            z = math.random(-spread*150, spread*150) / 100,
         }
         pos = vector.add(pos, offset)
 
         minetest.add_particle({
             pos = pos,
-            velocity = {x = 0, y = 0.1, z = 0},
-            acceleration = {x = 0, y = 0.2, z = 0},
-            expirationtime = 0.4,
+            velocity = {x = 0, y = 0.01, z = 0},
+            acceleration = {x = 0, y = 0.5, z = 0},
+            expirationtime = 0.6,
             size = trail_def.size,
             texture = trail_def.texture,
             glow = 8,
